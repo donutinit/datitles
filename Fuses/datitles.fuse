@@ -1,0 +1,616 @@
+--[[--
+datitles: créditos finales que suben de abajo hacia arriba.
+
+Un solo texto con marcas simples:
+
+  # Título         display grande en el color del título; varias líneas seguidas forman un bloque
+  ## Cierre        display mediano, como "Fin"
+  Rol | Nombre     fila a dos columnas: el rol a la izquierda, el nombre a la derecha
+  | Nombre         solo el nombre, en la columna derecha
+  Texto suelto     línea centrada en mono: departamentos y notas
+  línea vacía      separa bloques
+
+El rollo cruza la pantalla de abajo hacia arriba en todo el clip.
+
+Copyright (C) 2026 Von Diego · AGPL-3.0-only · https://github.com/donutinit/datitles
+--]]--
+
+FuRegisterClass("datitles", CT_Tool, {
+	REGS_Name = "datitles",
+	REGS_Category = "Fuses\\datitles",
+	REGS_OpIconString = "dTi",
+	REGS_OpDescription = "Créditos finales que suben",
+	REGS_URL = "https://github.com/donutinit/datitles",
+	REG_OpNoMask = true,
+	REG_NoObjMatCtrls = true,
+	REG_NoMotionBlurCtrls = true,
+	REG_TimeVariant = true, -- el rollo cambia en cada cuadro aunque nada esté animado
+	REG_Version = 1,
+})
+
+local DEFAULT_TEXT = [[
+# Título
+# de la película
+
+Dirección | Nombre Apellido
+Guion | Nombre Apellido
+Producción | Nombre Apellido
+| Nombre Apellido
+
+Fotografía
+Dirección de fotografía | Nombre Apellido
+Operación de cámara | Nombre Apellido
+
+## Fin
+
+Ciudad, Estado]]
+
+local FONTS = {
+	{ key = "title", id = "Title", label = "Títulos", font = "League Gothic", style = "Regular" },
+	{ key = "text", id = "Text", label = "Texto", font = "Newsreader", style = "Regular" },
+	{ key = "mono", id = "Mono", label = "Mono", font = "IBM Plex Mono", style = "Regular" },
+}
+
+-- Colores por omisión, en sRGB.
+local COLORS = {
+	{ key = "paper", id = "Paper", label = "Fondo", rgb = { 0.0479, 0.0314, 0.0288 } },
+	{ key = "accent", id = "Accent", label = "Título", rgb = { 0.8317, 0.0456, 0.0471 } },
+	{ key = "ink", id = "Ink", label = "Nombres y cierre", rgb = { 0.9266, 0.9051, 0.8817 } },
+	{ key = "muted", id = "Muted", label = "Roles y mono", rgb = { 0.6072, 0.5781, 0.5655 } },
+}
+
+-- El tamaño del texto va en % del alto del cuadro; lo demás, en múltiplos del texto, para que
+-- todo escale junto.
+local MEASURES = {
+	{ key = "size", id = "Size", label = "Texto (% del alto)", default = 2.4, min = 0.5, max = 6 },
+	{ key = "titleScale", id = "TitleScale", label = "Título (× texto)", default = 5.2, min = 1, max = 10 },
+	{ key = "closeScale", id = "CloseScale", label = "Cierre (× texto)", default = 3.7, min = 1, max = 10 },
+	{ key = "monoScale", id = "MonoScale", label = "Mono (× texto)", default = 0.867, min = 0.5, max = 1.5 },
+	{ key = "width", id = "Width", label = "Ancho (% del ancho)", default = 58, min = 20, max = 100 },
+	{ key = "gutter", id = "Gutter", label = "Entre columnas (× texto)", default = 1.6, min = 0, max = 6 },
+	{ key = "lineHeight", id = "LineHeight", label = "Interlineado", default = 1.6, min = 0.8, max = 3 },
+	{ key = "rowGap", id = "RowGap", label = "Entre filas (× texto)", default = 0.533, min = 0, max = 3 },
+	{ key = "blockGap", id = "BlockGap", label = "Entre bloques (× texto)", default = 4.267, min = 0, max = 12 },
+}
+
+-- Cómo se ve cada tipo de línea centrada: fuente, interlineado y espaciado entre letras en em.
+local STYLES = {
+	title = { font = "title", lh = 1, ls = 0.01, color = "accent" },
+	close = { font = "close", lh = 1.02, ls = 0.01, color = "ink" },
+	note = { font = "mono", lh = 1.5, ls = 0.08, color = "muted" },
+}
+
+function Create()
+	InText = self:AddInput("Créditos", "Credits", {
+		LINKID_DataType = "Text",
+		INPID_InputControl = "TextEditControl",
+		TEC_Lines = 16,
+		INPS_DefaultText = DEFAULT_TEXT,
+	})
+
+	self:BeginControlNest("Animación", "AnimationNest", true)
+	InMode = self:AddInput("Duración", "Mode", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "MultiButtonControl",
+		INP_Default = 0,
+		INP_Integer = true,
+		{ MBTNC_AddButton = "Todo el clip", MBTNCD_ButtonWidth = 0.5 },
+		{ MBTNC_AddButton = "Manual", MBTNCD_ButtonWidth = 0.5 },
+	})
+	InProgress = self:AddInput("Progreso (manual)", "Progress", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "SliderControl",
+		INP_Default = 0,
+		INP_MinScale = 0,
+		INP_MaxScale = 1,
+	})
+	self:EndControlNest()
+
+	self:BeginControlNest("Tipografía", "FontNest", false)
+	InFonts = {}
+	for i, f in ipairs(FONTS) do
+		local font = self:AddInput(f.label, f.id .. "Font", {
+			LINKID_DataType = "Text",
+			INPID_InputControl = "FontFileControl",
+			IC_ControlGroup = 10 + i,
+			IC_ControlID = 0,
+			INP_Level = 1,
+			INP_DoNotifyChanged = true,
+		})
+		local style = self:AddInput("Estilo", f.id .. "Style", {
+			LINKID_DataType = "Text",
+			INPID_InputControl = "FontFileControl",
+			IC_ControlGroup = 10 + i,
+			IC_ControlID = 1,
+			INP_Level = 1,
+			INP_DoNotifyChanged = true,
+		})
+		InFonts[f.key] = { font = font, style = style }
+	end
+	self:EndControlNest()
+
+	self:BeginControlNest("Medidas", "SizeNest", false)
+	InMeasures = {}
+	for _, m in ipairs(MEASURES) do
+		InMeasures[m.key] = self:AddInput(m.label, m.id, {
+			LINKID_DataType = "Number",
+			INPID_InputControl = "SliderControl",
+			INP_Default = m.default,
+			INP_MinScale = m.min,
+			INP_MaxScale = m.max,
+			INP_MinAllowed = 0,
+		})
+	end
+	self:EndControlNest()
+
+	self:BeginControlNest("Colores", "ColorNest", false)
+	InSolid = self:AddInput("Fondo sólido", "SolidBackground", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "CheckboxControl",
+		INP_Default = 1,
+		INP_Integer = true,
+	})
+	InColors = {}
+	for i, c in ipairs(COLORS) do
+		local channels = {}
+		for j, ch in ipairs({ { "Red", "Rojo" }, { "Green", "Verde" }, { "Blue", "Azul" } }) do
+			channels[j] = self:AddInput(j == 1 and c.label or ch[2], c.id .. ch[1], {
+				LINKID_DataType = "Number",
+				INPID_InputControl = "ColorControl",
+				INP_Default = c.rgb[j],
+				INP_MinScale = 0,
+				INP_MaxScale = 1,
+				ICS_Name = c.label,
+				IC_ControlGroup = 20 + i,
+				IC_ControlID = j - 1,
+			})
+		end
+		InColors[c.key] = channels
+	end
+	self:EndControlNest()
+
+	-- El título de Edit page las ata a comp.RenderStart y comp.RenderEnd para que el rollo dure
+	-- lo que dure el clip. Sin expresión (el Fuse suelto en Fusion) se usa el rango de la comp.
+	InFirst = self:AddInput("Primer cuadro", "FirstFrame", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "SliderControl",
+		INP_Default = 0,
+		IC_Visible = false,
+	})
+	InLast = self:AddInput("Último cuadro", "LastFrame", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "SliderControl",
+		INP_Default = 0,
+		IC_Visible = false,
+	})
+
+	InImage = self:AddInput("Input", "Input", {
+		LINKID_DataType = "Image",
+		LINK_Main = 1,
+	})
+	OutImage = self:AddOutput("Output", "Output", {
+		LINKID_DataType = "Image",
+		LINK_Main = 1,
+	})
+end
+
+function NotifyChanged(inp, param, time)
+	-- FontFileControl no acepta un valor por omisión; se pone cuando llega vacío.
+	if not InFonts or not param or (param.Value ~= nil and param.Value ~= "") then
+		return
+	end
+	for _, f in ipairs(FONTS) do
+		local pair = InFonts[f.key]
+		if inp == pair.font then
+			inp:SetSource(Text(f.font), time)
+		elseif inp == pair.style then
+			inp:SetSource(Text(f.style), time)
+		end
+	end
+end
+
+-- Texto -------------------------------------------------------------------------------------
+
+local function trim(s)
+	return (s:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+-- UTF-8 a puntos de código. Un byte suelto que no forma secuencia se toma como Latin-1.
+local function cont(b)
+	return b and b >= 0x80 and b < 0xC0
+end
+
+local function codepoints(s)
+	local out, i, n = {}, 1, #s
+	while i <= n do
+		local c = s:byte(i)
+		local cp, len = c, 1
+		local c2, c3, c4 = s:byte(i + 1, i + 3)
+		if c >= 0xC0 and c < 0xE0 and cont(c2) then
+			cp, len = (c - 0xC0) * 64 + (c2 - 0x80), 2
+		elseif c >= 0xE0 and c < 0xF0 and cont(c2) and cont(c3) then
+			cp, len = (c - 0xE0) * 4096 + (c2 - 0x80) * 64 + (c3 - 0x80), 3
+		elseif c >= 0xF0 and c < 0xF8 and cont(c2) and cont(c3) and cont(c4) then
+			cp, len = (c - 0xF0) * 262144 + (c2 - 0x80) * 4096 + (c3 - 0x80) * 64 + (c4 - 0x80), 4
+		end
+		out[#out + 1] = cp
+		i = i + len
+	end
+	return out
+end
+
+-- Mayúsculas de ASCII y Latin-1, que cubren el español (string.upper no toca los acentos).
+local function upper(cps)
+	local out = {}
+	for i, cp in ipairs(cps) do
+		if (cp >= 97 and cp <= 122) or (cp >= 224 and cp <= 254 and cp ~= 247) then
+			cp = cp - 32
+		elseif cp == 255 then
+			cp = 376
+		end
+		out[i] = cp
+	end
+	return out
+end
+
+local function parse(text)
+	text = text:gsub("\r\n?", "\n")
+	local blocks, block = {}, nil
+	for raw in (text .. "\n"):gmatch("([^\n]*)\n") do
+		local line = trim(raw)
+		if line == "" then
+			block = nil
+		else
+			local item
+			local close = line:match("^##%s*(.*)$")
+			local title = line:match("^#%s*(.*)$")
+			if close then
+				item = { kind = "close", text = close }
+			elseif title then
+				item = { kind = "title", text = title }
+			elseif line:find("|", 1, true) then
+				local role, name = line:match("^(.-)|(.*)$")
+				item = { kind = "row", role = trim(role), name = trim(name) }
+			else
+				item = { kind = "note", text = line }
+			end
+			if not block then
+				block = {}
+				blocks[#blocks + 1] = block
+			end
+			block[#block + 1] = item
+		end
+	end
+	return blocks
+end
+
+-- Fuentes y medición -------------------------------------------------------------------------
+
+-- Las métricas de TextStyleFontMetrics se llevan a unidades de salida (1 = ancho del cuadro)
+-- multiplicando por 10 * size, como en los ejemplos del SDK. Aquí size se elige para que el em
+-- (alto de la caja menos el leading interno) mida lo que se pide, igual en todas las fuentes.
+local function loadFont(face, em)
+	local tfm = TextStyleFontMetrics(TextStyleFont(face[1], face[2]))
+	local box = (tfm.TextAscent or 0) + (tfm.TextDescent or 0)
+	local inner = tfm.TextInternalLeading or 0
+	if inner < 0 or inner > box / 2 then
+		inner = 0
+	end
+	local unit = box - inner > 0 and em / (box - inner) or em
+	return {
+		tfm = tfm,
+		unit = unit,
+		em = em,
+		asc = (tfm.TextAscent or 0) * unit,
+		desc = (tfm.TextDescent or 0) * unit,
+		adv = {},
+		kern = {},
+		glyph = {},
+	}
+end
+
+local function advance(f, cp)
+	local w = f.adv[cp]
+	if not w then
+		w = f.tfm:CharacterWidth(cp) * f.unit
+		f.adv[cp] = w
+	end
+	return w
+end
+
+local function kerning(f, a, b)
+	local key = a * 1114112 + b
+	local k = f.kern[key]
+	if not k then
+		k = (f.tfm:CharacterKerning(a, b) or 0) * f.unit
+		f.kern[key] = k
+	end
+	return k
+end
+
+local function measure(f, cps, ls)
+	local w, prev = 0, nil
+	for i = 1, #cps do
+		local cp = cps[i]
+		if prev then
+			w = w + kerning(f, prev, cp) + ls
+		end
+		w = w + advance(f, cp)
+		prev = cp
+	end
+	return w
+end
+
+-- Parte en palabras y arma líneas que quepan en maxW. Una palabra más ancha se queda sola.
+local function wrap(f, cps, ls, maxW)
+	local words, word = {}, {}
+	for i = 1, #cps do
+		if cps[i] == 32 then
+			if #word > 0 then
+				words[#words + 1] = word
+				word = {}
+			end
+		else
+			word[#word + 1] = cps[i]
+		end
+	end
+	if #word > 0 then
+		words[#words + 1] = word
+	end
+
+	local lines, line = {}, {}
+	for _, w in ipairs(words) do
+		local candidate = {}
+		for i = 1, #line do
+			candidate[i] = line[i]
+		end
+		if #line > 0 then
+			candidate[#candidate + 1] = 32
+		end
+		for i = 1, #w do
+			candidate[#candidate + 1] = w[i]
+		end
+		if #line > 0 and measure(f, candidate, ls) > maxW then
+			lines[#lines + 1] = line
+			line = w
+		else
+			line = candidate
+		end
+	end
+	if #line > 0 then
+		lines[#lines + 1] = line
+	end
+	return lines
+end
+
+-- Maquetación ------------------------------------------------------------------------------
+
+-- Distancias desde el borde superior del rollo, hacia abajo, en unidades de salida.
+local function buildLayout(p, aspect)
+	local em = p.size / 100 * aspect
+	local fonts = {
+		title = loadFont(p.fonts.title, em * p.titleScale),
+		close = loadFont(p.fonts.title, em * p.closeScale),
+		text = loadFont(p.fonts.text, em),
+		mono = loadFont(p.fonts.mono, em * p.monoScale),
+	}
+	local blockW = p.width / 100
+	local gutter = p.gutter * em
+	local colW = math.max(em, (blockW - gutter) / 2)
+	local rowGap = p.rowGap * em
+	local runs = {}
+
+	local function addLine(f, cps, x, top, lh, color, ls)
+		local half = (lh - (f.asc + f.desc)) / 2
+		runs[#runs + 1] = {
+			font = f,
+			cps = cps,
+			x = x,
+			base = top + half + f.asc,
+			top = top,
+			bottom = top + lh,
+			color = color,
+			ls = ls,
+		}
+	end
+
+	local d = 0
+	for b, block in ipairs(parse(p.text)) do
+		if b > 1 then
+			d = d + p.blockGap * em
+		end
+		local prev
+		for _, item in ipairs(block) do
+			if prev then
+				-- Las líneas seguidas de un título son un solo párrafo, sin hueco entre ellas.
+				if item.kind ~= prev or item.kind == "row" or item.kind == "note" then
+					d = d + rowGap
+				end
+				-- El departamento lleva un margen extra antes de sus filas.
+				if prev == "note" and item.kind == "row" then
+					d = d + rowGap
+				end
+			end
+			if item.kind == "row" then
+				local f = fonts.text
+				local lh = p.lineHeight * em
+				local roles = wrap(f, codepoints(item.role), 0, colW)
+				local names = wrap(f, codepoints(item.name), 0, colW)
+				for i, ln in ipairs(roles) do
+					addLine(f, ln, 0.5 - gutter / 2 - measure(f, ln, 0), d + (i - 1) * lh, lh, "muted", 0)
+				end
+				for i, ln in ipairs(names) do
+					addLine(f, ln, 0.5 + gutter / 2, d + (i - 1) * lh, lh, "ink", 0)
+				end
+				d = d + math.max(#roles, #names, 1) * lh
+			else
+				local s = STYLES[item.kind]
+				local f = fonts[s.font]
+				local ls = s.ls * f.em
+				local lh = s.lh * f.em
+				local maxW = item.kind == "note" and blockW or 0.9
+				for _, ln in ipairs(wrap(f, upper(codepoints(item.text)), ls, maxW)) do
+					addLine(f, ln, 0.5 - measure(f, ln, ls) / 2, d, lh, s.color, ls)
+					d = d + lh
+				end
+			end
+			prev = item.kind
+		end
+	end
+	-- Margen inferior del rollo.
+	d = d + p.blockGap * em
+	return { runs = runs, height = d, em = em }
+end
+
+local cache = {}
+
+local function getLayout(p, aspect)
+	local key = { p.text, aspect }
+	for _, f in ipairs(FONTS) do
+		key[#key + 1] = p.fonts[f.key][1]
+		key[#key + 1] = p.fonts[f.key][2]
+	end
+	for _, m in ipairs(MEASURES) do
+		key[#key + 1] = p[m.key]
+	end
+	for i = 1, #key do
+		key[i] = tostring(key[i])
+	end
+	key = table.concat(key, "\0")
+	if cache.key ~= key then
+		cache.key = key
+		cache.layout = buildLayout(p, aspect)
+		-- Ritmo de lectura de referencia: 70 px/s con filas de 15 px (unas dos filas por segundo),
+		-- y nunca menos de 20 s.
+		local l = cache.layout
+		local seconds = math.max(20, (l.height + aspect) / (l.em * 70 / 15))
+		print(("datitles: a un ritmo de lectura cómodo, el clip dura %.0f s"):format(seconds))
+	end
+	return cache.layout
+end
+
+-- Dibujo -----------------------------------------------------------------------------------
+
+-- Igual que drawstring del SDK: cada glifo se centra en su avance, sobre la línea base.
+local function addGlyphs(shape, run, baseY)
+	local f = run.font
+	local size = f.unit / 10
+	local pen, prev = run.x, nil
+	for i = 1, #run.cps do
+		local cp = run.cps[i]
+		if prev then
+			pen = pen + kerning(f, prev, cp) + run.ls
+		end
+		local cw = advance(f, cp)
+		if cp ~= 32 then
+			local glyph = f.glyph[cp]
+			if glyph == nil then
+				glyph = f.tfm:GetCharacterShape(cp, false) or false
+				f.glyph[cp] = glyph
+			end
+			if glyph then
+				local m = Matrix4()
+				m:Identity()
+				m:Scale(1.0 / f.tfm.Scale, 1.0 / f.tfm.Scale, 1.0)
+				m:Scale(size, size, 1)
+				m:Move(pen + cw / 2, baseY, 0)
+				shape:AddShape(glyph:TransformOfShape(m))
+			end
+		end
+		pen = pen + cw
+		prev = cp
+	end
+end
+
+local function draw(out, layout, top, aspect, quality, colors)
+	local shapes = {}
+	for _, run in ipairs(layout.runs) do
+		-- Solo lo que toca el cuadro, con un em de margen por si los glifos salen de su línea.
+		local margin = run.font.em
+		if top - run.top + margin > 0 and top - run.bottom - margin < aspect then
+			local shape = shapes[run.color]
+			if not shape then
+				shape = Shape()
+				shapes[run.color] = shape
+			end
+			addGlyphs(shape, run, top - run.base)
+		end
+	end
+	for _, c in ipairs(COLORS) do
+		local shape = shapes[c.key]
+		if shape then
+			local rgb = colors[c.key]
+			local ic = ImageChannel(out, quality)
+			local fs = FillStyle()
+			local cs = ChannelStyle()
+			cs.Color = Pixel({ R = rgb[1], G = rgb[2], B = rgb[3], A = 1 })
+			ic:SetStyleFill(fs)
+			ic:ShapeFill(shape)
+			ic:PutToImage("CM_Merge", cs)
+		end
+	end
+end
+
+local function clamp(x)
+	return math.max(0, math.min(1, x))
+end
+
+local function progress(req, comp)
+	if InMode:GetValue(req).Value > 0.5 then
+		return clamp(InProgress:GetValue(req).Value)
+	end
+	local first = InFirst:GetValue(req).Value
+	local last = InLast:GetValue(req).Value
+	if last <= first then
+		local ok, attrs = pcall(function()
+			return comp:GetAttrs()
+		end)
+		if ok and type(attrs) == "table" then
+			first = attrs.COMPN_RenderStart or 0
+			last = attrs.COMPN_RenderEnd or 0
+		end
+	end
+	if last <= first then
+		return 0
+	end
+	return clamp((req.Time - first) / (last - first))
+end
+
+function Process(req)
+	local img = InImage:GetValue(req)
+	local out = img:CopyOf()
+	local aspect = (out.Height * out.YScale) / (out.Width * out.XScale)
+
+	-- Sin la interfaz abierta (un render en segundo plano) nadie ha escaneado las fuentes.
+	if not next(FontManager:GetFontList()) then
+		FontManager:ScanDir()
+	end
+
+	local p = { text = InText:GetValue(req).Value or "", fonts = {}, colors = {} }
+	for _, f in ipairs(FONTS) do
+		local font = InFonts[f.key].font:GetValue(req).Value
+		local style = InFonts[f.key].style:GetValue(req).Value
+		p.fonts[f.key] = {
+			(font and font ~= "") and font or f.font,
+			(style and style ~= "") and style or f.style,
+		}
+	end
+	for _, m in ipairs(MEASURES) do
+		p[m.key] = InMeasures[m.key]:GetValue(req).Value
+	end
+	for _, c in ipairs(COLORS) do
+		local ch = InColors[c.key]
+		p.colors[c.key] = { ch[1]:GetValue(req).Value, ch[2]:GetValue(req).Value, ch[3]:GetValue(req).Value }
+	end
+
+	if InSolid:GetValue(req).Value > 0.5 then
+		local bg = p.colors.paper
+		out:Fill(Pixel({ R = bg[1], G = bg[2], B = bg[3], A = 1 }))
+	end
+
+	local layout = getLayout(p, aspect)
+	local top = progress(req, self.Comp) * (layout.height + aspect)
+	draw(out, layout, top, aspect, req:IsQuick() and 1 or 32, p.colors)
+
+	OutImage:Set(req, out)
+end

@@ -1,0 +1,42 @@
+# Título
+# de la película
+
+Dirección | Nombre Apellido
+Guion | Nombre Apellido
+Producción | Nombre Apellido
+| Nombre Apellido
+
+Equipo de producción
+Primera asistencia de dirección | Nombre Apellido
+Gerencia de producción y de locaciones | Nombre Apellido
+Continuidad | Nombre Apellido
+
+Fotografía e iluminación
+Dirección de fotografía | Nombre Apellido
+Operación de cámara | Nombre Apellido
+Primera asistencia de cámara, gaffer y foto fija | Nombre Apellido
+Data manager | Nombre Apellido
+Staff | Nombre Apellido
+| Nombre Apellido
+
+Arte
+Diseño de producción | Nombre Apellido
+Ambientación y utilería | Nombre Apellido
+Diseño gráfico | Nombre Apellido
+
+Sonido y música
+Sonido directo | Nombre Apellido
+Música original | Nombre Apellido
+
+Postproducción
+Edición | Nombre Apellido
+Corrección de color | Nombre Apellido
+Diseño sonoro | Nombre Apellido
+
+Agradecimientos
+| Nombre Apellido
+| Nombre Apellido
+
+## Fin
+
+Ciudad, País

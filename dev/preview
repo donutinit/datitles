@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Simula el título en lizeth (sin Resolve): valida el .setting, corre el Fuse y dibuja cuadros.
+#
+#   dev/preview [-t TEXTO] [-s SEGUNDOS] [CUADRO...]
+#
+# Cuadros por omisión: unos cuantos a lo largo de un clip de 60 s a 24 fps, en 1920x1080.
+# Deja los PNG en $DATITLES_OUT (por omisión ~/.cache/datitles/preview).
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+python=${DATITLES_PYTHON:-python3}
+out=${DATITLES_OUT:-$HOME/.cache/datitles/preview}
+text=""
+seconds=60
+while getopts "t:s:" opt; do
+  case $opt in
+    t) text=$OPTARG ;;
+    s) seconds=$OPTARG ;;
+    *) exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+duration=$((seconds * 24))
+frames=("$@")
+if [ ${#frames[@]} -eq 0 ]; then
+  frames=(0 $((duration / 8)) $((duration / 4)) $((duration * 3 / 8)) $((duration / 2)) $((duration * 5 / 8)) $((duration * 3 / 4)) $((duration * 7 / 8)) $((duration - 1)))
+fi
+
+mkdir -p "$out"
+rm -f "$out"/cuadro-*.png
+texts=("$root/ejemplos/ejemplo.txt" "$root/Fuses/datitles.fuse")
+[ -n "$text" ] && texts+=("$text")
+"$python" -I "$root/dev/metrics.py" "$out/metrics.lua" "${texts[@]}"
+args=("$out/metrics.lua" "$out/cuadros.json" 1920 1080 "$duration" "${frames[@]}")
+[ -n "$text" ] && args+=(--texto "$text")
+luajit "$root/dev/preview.lua" "${args[@]}"
+"$python" -I "$root/dev/render.py" "$out/metrics.lua" "$out/cuadros.json" "$out"
+echo "$out"

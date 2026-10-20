@@ -1,0 +1,102 @@
+{
+	Tools = ordered() {
+		datitles = GroupOperator {
+			CtrlWZoom = false,
+			CustomData = {
+				Path = {
+					Map = {
+						["Setting:"] = "Templates:\\Edit\\Titles\\Datitles\\"
+					}
+				},
+			},
+			Inputs = ordered() {
+				Input1 = InstanceInput { SourceOp = "Creditos", Source = "Credits", },
+				Input2 = InstanceInput { SourceOp = "Creditos", Source = "AnimationNest", },
+				Input3 = InstanceInput { SourceOp = "Creditos", Source = "Mode", Default = 0, },
+				Input4 = InstanceInput { SourceOp = "Creditos", Source = "Progress", Default = 0, },
+				Input5 = InstanceInput { SourceOp = "Creditos", Source = "RollNest", },
+				Input6 = InstanceInput { SourceOp = "Creditos", Source = "EdgeFade", Default = 0, },
+				Input7 = InstanceInput { SourceOp = "Creditos", Source = "HoldClose", Default = 0, },
+				Input8 = InstanceInput { SourceOp = "Creditos", Source = "HoldTime", Default = 3, },
+				Input9 = InstanceInput { SourceOp = "Creditos", Source = "CloseFade", Default = 1, },
+				Input10 = InstanceInput { SourceOp = "Creditos", Source = "WholePixels", Default = 0, },
+				Input11 = InstanceInput { SourceOp = "Creditos", Source = "FontNest", },
+				Input12 = InstanceInput { SourceOp = "Creditos", Source = "TitleFont", ControlGroup = 11, },
+				Input13 = InstanceInput { SourceOp = "Creditos", Source = "TitleStyle", ControlGroup = 11, },
+				Input14 = InstanceInput { SourceOp = "Creditos", Source = "TextFont", ControlGroup = 12, },
+				Input15 = InstanceInput { SourceOp = "Creditos", Source = "TextStyle", ControlGroup = 12, },
+				Input16 = InstanceInput { SourceOp = "Creditos", Source = "MonoFont", ControlGroup = 13, },
+				Input17 = InstanceInput { SourceOp = "Creditos", Source = "MonoStyle", ControlGroup = 13, },
+				Input18 = InstanceInput { SourceOp = "Creditos", Source = "Uppercase", Default = 1, },
+				Input19 = InstanceInput { SourceOp = "Creditos", Source = "SizeNest", },
+				Input20 = InstanceInput { SourceOp = "Creditos", Source = "Rows", Default = 0, },
+				Input21 = InstanceInput { SourceOp = "Creditos", Source = "Size", Default = 2.4, },
+				Input22 = InstanceInput { SourceOp = "Creditos", Source = "TitleScale", Default = 5.2, },
+				Input23 = InstanceInput { SourceOp = "Creditos", Source = "CloseScale", Default = 3.7, },
+				Input24 = InstanceInput { SourceOp = "Creditos", Source = "MonoScale", Default = 0.867, },
+				Input25 = InstanceInput { SourceOp = "Creditos", Source = "RoleScale", Default = 0.8, },
+				Input26 = InstanceInput { SourceOp = "Creditos", Source = "Width", Default = 58, },
+				Input27 = InstanceInput { SourceOp = "Creditos", Source = "Gutter", Default = 1.6, },
+				Input28 = InstanceInput { SourceOp = "Creditos", Source = "LineHeight", Default = 1.6, },
+				Input29 = InstanceInput { SourceOp = "Creditos", Source = "RowGap", Default = 0.533, },
+				Input30 = InstanceInput { SourceOp = "Creditos", Source = "BlockGap", Default = 4.267, },
+				Input31 = InstanceInput { SourceOp = "Creditos", Source = "ColorNest", },
+				Input32 = InstanceInput { SourceOp = "Creditos", Source = "SolidBackground", Default = 1, },
+				Input33 = InstanceInput { SourceOp = "Creditos", Source = "PaperRed", Name = "Fondo", ControlGroup = 21, Default = 0.0479, },
+				Input34 = InstanceInput { SourceOp = "Creditos", Source = "PaperGreen", ControlGroup = 21, Default = 0.0314, },
+				Input35 = InstanceInput { SourceOp = "Creditos", Source = "PaperBlue", ControlGroup = 21, Default = 0.0288, },
+				Input36 = InstanceInput { SourceOp = "Creditos", Source = "AccentRed", Name = "Título", ControlGroup = 22, Default = 0.8317, },
+				Input37 = InstanceInput { SourceOp = "Creditos", Source = "AccentGreen", ControlGroup = 22, Default = 0.0456, },
+				Input38 = InstanceInput { SourceOp = "Creditos", Source = "AccentBlue", ControlGroup = 22, Default = 0.0471, },
+				Input39 = InstanceInput { SourceOp = "Creditos", Source = "InkRed", Name = "Nombres y cierre", ControlGroup = 23, Default = 0.9266, },
+				Input40 = InstanceInput { SourceOp = "Creditos", Source = "InkGreen", ControlGroup = 23, Default = 0.9051, },
+				Input41 = InstanceInput { SourceOp = "Creditos", Source = "InkBlue", ControlGroup = 23, Default = 0.8817, },
+				Input42 = InstanceInput { SourceOp = "Creditos", Source = "MutedRed", Name = "Roles y mono", ControlGroup = 24, Default = 0.6072, },
+				Input43 = InstanceInput { SourceOp = "Creditos", Source = "MutedGreen", ControlGroup = 24, Default = 0.5781, },
+				Input44 = InstanceInput { SourceOp = "Creditos", Source = "MutedBlue", ControlGroup = 24, Default = 0.5655, },
+			},
+			Outputs = {
+				MainOutput1 = InstanceOutput { SourceOp = "Creditos", Source = "Output", }
+			},
+			ViewInfo = GroupInfo {
+				Pos = { 0, 0 },
+				Flags = { AllowPan = false, AutoSnap = true, RemoveRouters = true },
+				Size = { 236, 66, 118, 22 },
+				Direction = "Horizontal",
+				PipeStyle = "Direct",
+				Scale = 1,
+				Offset = { 0, 0 }
+			},
+			Tools = ordered() {
+				Lienzo = Background {
+					CtrlWShown = false,
+					Inputs = {
+						Width = Input { Value = 1920, },
+						Height = Input { Value = 1080, },
+						UseFrameFormatSettings = Input { Value = 1, },
+						TopLeftAlpha = Input { Value = 0, },
+					},
+					ViewInfo = OperatorInfo { Pos = { -55, 0 } },
+				},
+				Creditos = Fuse.datitles {
+					CtrlWShown = false,
+					Inputs = {
+						Credits = Input { Value = "# Título\n# de la película\n\nDirección | Nombre Apellido\nGuion | Nombre Apellido\nProducción | Nombre Apellido\n| Nombre Apellido\n\nFotografía\nDirección de fotografía | Nombre Apellido\nOperación de cámara | Nombre Apellido\n\n> Gracias a quienes hicieron posible esta película.\n\n## Fin\n\nCiudad, Estado", },
+						Kind = Input { Value = 0, },
+						TitleFont = Input { Value = "League Gothic", },
+						TitleStyle = Input { Value = "Regular", },
+						TextFont = Input { Value = "Newsreader", },
+						TextStyle = Input { Value = "Regular", },
+						MonoFont = Input { Value = "IBM Plex Mono", },
+						MonoStyle = Input { Value = "Regular", },
+						FirstFrame = Input { Expression = "comp.RenderStart", },
+						LastFrame = Input { Expression = "comp.RenderEnd", },
+						Input = Input { SourceOp = "Lienzo", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 55, 0 } },
+				},
+			},
+		},
+	},
+	ActiveTool = "datitles"
+}

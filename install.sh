@@ -11,8 +11,14 @@ case "$(uname -s)" in
 esac
 fusion=${FUSION_DIR:-$fusion}
 
-mkdir -p "$fusion/Fuses" "$fusion/Templates/Edit/Titles"
-cp "$root/Fuses/datitles.fuse" "$fusion/Fuses/"
-cp "$root/Templates/Edit/Titles/datitles.setting" "$fusion/Templates/Edit/Titles/"
+mkdir -p "$fusion/Fuses"
+cp "$root"/Fuses/*.fuse "$fusion/Fuses/"
+for dir in "$root"/Templates/Edit/*/Datitles; do
+  dest="$fusion/Templates/Edit/$(basename "$(dirname "$dir")")/Datitles"
+  mkdir -p "$dest"
+  cp "$dir"/*.setting "$dest/"
+done
+# La 0.1 dejaba la plantilla suelta, junto a las de Resolve.
+rm -f "$fusion/Templates/Edit/Titles/datitles.setting"
 echo "Instalado en $fusion"
-echo "Reinicia Resolve: queda en Effects > Toolbox > Titles > Fusion Titles > datitles."
+echo "Reinicia Resolve: los títulos quedan en Effects > Toolbox > Titles > Datitles y la película en Effects > Toolbox > Effects > Datitles."

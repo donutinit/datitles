@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Arma los Fuses de Fuses/ desde src/: cada src/NOMBRE.lua con su línea "-- @comun" cambiada por
+# src/comun.lua. Con --revisar no escribe nada y falla si algún Fuse no está al día.
+#
+#   dev/build [--revisar]
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+check=false
+[ "${1:-}" = "--revisar" ] && check=true
+
+# Fuente en src/ y Fuse que sale de ella.
+fuses=("creditos:datitles")
+[ -f "$root/src/cintillo.lua" ] && fuses+=("cintillo:datitles-cintillo")
+
+build() {
+  echo "-- Generado por dev/build desde src/$1.lua y src/comun.lua: los cambios van allá."
+  awk -v comun="$root/src/comun.lua" '
+    $0 == "-- @comun" { while ((getline line < comun) > 0) print line; next }
+    { print }
+  ' "$root/src/$1.lua"
+}
+
+status=0
+for pair in "${fuses[@]}"; do
+  src=${pair%%:*}
+  fuse="$root/Fuses/${pair##*:}.fuse"
+  if $check; then
+    if ! cmp -s <(build "$src") "$fuse"; then
+      echo "Fuses/$(basename "$fuse") no está al día con src/: corre dev/build" >&2
+      status=1
+    fi
+  else
+    build "$src" > "$fuse"
+  fi
+done
+exit $status

@@ -1,0 +1,17 @@
+una película de
+## Nombre Apellido
+
+# Título
+# de la película
+
+Guion | Nombre Apellido
+
+Dirección de fotografía | Nombre Apellido
+
+Diseño de producción | Nombre Apellido
+Coordinación de diseño | Nombre Apellido
+
+Producción | Nombre Apellido
+| Nombre Apellido
+
+Dirección | Nombre Apellido

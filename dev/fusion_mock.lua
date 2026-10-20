@@ -42,6 +42,11 @@ function self.Comp:GetAttrs()
 	return { COMPN_RenderStart = 0, COMPN_RenderEnd = mock.renderEnd }
 end
 
+function self.Comp:GetPrefs(key)
+	assert(key == "Comp.FrameFormat.Rate", "preferencia desconocida para el simulador: " .. key)
+	return 24
+end
+
 function self:AddInput(name, id, attrs)
 	assert(not self.inputs[id], "ID repetido: " .. id)
 	local value = attrs.INP_Default

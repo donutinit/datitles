@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# Simula el título en lizeth (sin Resolve): valida el .setting, corre el Fuse y dibuja cuadros.
+# Simula datitles en lizeth (sin Resolve): revisa que los Fuses estén armados desde src/ y todas
+# las plantillas, corre una y dibuja cuadros.
 #
-#   dev/preview [-t TEXTO] [-s SEGUNDOS] [CUADRO...]
+#   dev/preview [-p PLANTILLA] [-b BASE] [-t TEXTO] [-s SEGUNDOS] [-v ID=VALOR]... [CUADRO...]
 #
+# PLANTILLA es el nombre sin "datitles " ni ".setting" (creditos, inicio...); por omisión, creditos.
+# -v cambia una entrada del Fuse para probar sin tocar la plantilla, por ejemplo -v Rows=1.
+# Un efecto (pelicula) se prueba encima de los cuadros de otra plantilla sobre negro: BASE, que por
+# omisión es inicio; -t y -v van a esa plantilla.
 # Cuadros por omisión: unos cuantos a lo largo de un clip de 60 s a 24 fps, en 1920x1080.
 # Deja los PNG en $DATITLES_OUT (por omisión ~/.cache/datitles/preview).
 set -euo pipefail
@@ -10,16 +15,44 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 python=${DATITLES_PYTHON:-python3}
 out=${DATITLES_OUT:-$HOME/.cache/datitles/preview}
+template=creditos
+base=inicio
 text=""
 seconds=60
-while getopts "t:s:" opt; do
+values=()
+while getopts "p:b:t:s:v:" opt; do
   case $opt in
+    p) template=$OPTARG ;;
+    b) base=$OPTARG ;;
     t) text=$OPTARG ;;
     s) seconds=$OPTARG ;;
+    v) values+=(--valor "$OPTARG") ;;
     *) exit 2 ;;
   esac
 done
 shift $((OPTIND - 1))
+
+"$root/dev/build" --revisar
+mapfile -t settings < <(find "$root/Templates" -name '*.setting' | sort)
+selected=""
+effect=""
+for s in "${settings[@]}"; do
+  luajit "$root/dev/preview.lua" "$s"
+  [ "$(basename "$s")" = "datitles $template.setting" ] && selected=$s
+done
+case $selected in
+  */Effects/*)
+    effect=$selected
+    selected=""
+    for s in "${settings[@]}"; do
+      [ "$(basename "$s")" = "datitles $base.setting" ] && selected=$s
+    done
+    ;;
+esac
+if [ -z "$selected" ]; then
+  echo "no hay plantilla datitles $template.setting (o su base, datitles $base.setting)" >&2
+  exit 2
+fi
 
 duration=$((seconds * 24))
 frames=("$@")
@@ -29,11 +62,18 @@ fi
 
 mkdir -p "$out"
 rm -f "$out"/cuadro-*.png
-texts=("$root/ejemplos/ejemplo.txt" "$root/Fuses/datitles.fuse")
+texts=("$root"/ejemplos/*.txt "$root"/Fuses/*.fuse "${settings[@]}")
 [ -n "$text" ] && texts+=("$text")
 "$python" -I "$root/dev/metrics.py" "$out/metrics.lua" "${texts[@]}"
-args=("$out/metrics.lua" "$out/cuadros.json" 1920 1080 "$duration" "${frames[@]}")
+args=("$selected" "$out/metrics.lua" "$out/cuadros.json" 1920 1080 "$duration" "${frames[@]}")
 [ -n "$text" ] && args+=(--texto "$text")
+args+=("${values[@]}")
 luajit "$root/dev/preview.lua" "${args[@]}"
-"$python" -I "$root/dev/render.py" "$out/metrics.lua" "$out/cuadros.json" "$out"
+if [ -n "$effect" ]; then
+  "$python" -I "$root/dev/render.py" "$out/metrics.lua" "$out/cuadros.json" "$out" --negro
+  luajit "$root/dev/preview.lua" "$effect" "$out/metrics.lua" "$out/efecto.json" 1920 1080 "$duration" "${frames[@]}"
+  "$python" -I "$root/dev/pelicula.py" "$out/efecto.json" "$out"
+else
+  "$python" -I "$root/dev/render.py" "$out/metrics.lua" "$out/cuadros.json" "$out"
+fi
 echo "$out"

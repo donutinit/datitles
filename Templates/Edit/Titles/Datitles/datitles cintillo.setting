@@ -1,0 +1,81 @@
+{
+	Tools = ordered() {
+		datitles = GroupOperator {
+			CtrlWZoom = false,
+			CustomData = {
+				Path = {
+					Map = {
+						["Setting:"] = "Templates:\\Edit\\Titles\\Datitles\\"
+					}
+				},
+			},
+			Inputs = ordered() {
+				Input1 = InstanceInput { SourceOp = "Cintillo", Source = "Name", },
+				Input2 = InstanceInput { SourceOp = "Cintillo", Source = "Role", },
+				Input3 = InstanceInput { SourceOp = "Cintillo", Source = "AnimationNest", },
+				Input4 = InstanceInput { SourceOp = "Cintillo", Source = "Motion", Default = 1, },
+				Input5 = InstanceInput { SourceOp = "Cintillo", Source = "InTime", Default = 0.6, },
+				Input6 = InstanceInput { SourceOp = "Cintillo", Source = "OutTime", Default = 0.6, },
+				Input7 = InstanceInput { SourceOp = "Cintillo", Source = "PositionNest", },
+				Input8 = InstanceInput { SourceOp = "Cintillo", Source = "Align", Default = 0, },
+				Input9 = InstanceInput { SourceOp = "Cintillo", Source = "Margin", Default = 8, },
+				Input10 = InstanceInput { SourceOp = "Cintillo", Source = "Height", Default = 12, },
+				Input11 = InstanceInput { SourceOp = "Cintillo", Source = "FontNest", },
+				Input12 = InstanceInput { SourceOp = "Cintillo", Source = "NameFont", ControlGroup = 11, },
+				Input13 = InstanceInput { SourceOp = "Cintillo", Source = "NameStyle", ControlGroup = 11, },
+				Input14 = InstanceInput { SourceOp = "Cintillo", Source = "RoleFont", ControlGroup = 12, },
+				Input15 = InstanceInput { SourceOp = "Cintillo", Source = "RoleStyle", ControlGroup = 12, },
+				Input16 = InstanceInput { SourceOp = "Cintillo", Source = "Uppercase", Default = 1, },
+				Input17 = InstanceInput { SourceOp = "Cintillo", Source = "SizeNest", },
+				Input18 = InstanceInput { SourceOp = "Cintillo", Source = "NameSize", Default = 6, },
+				Input19 = InstanceInput { SourceOp = "Cintillo", Source = "RoleScale", Default = 0.4, },
+				Input20 = InstanceInput { SourceOp = "Cintillo", Source = "Gap", Default = 0.25, },
+				Input21 = InstanceInput { SourceOp = "Cintillo", Source = "ColorNest", },
+				Input22 = InstanceInput { SourceOp = "Cintillo", Source = "InkRed", Name = "Nombre", ControlGroup = 21, Default = 0.9266, },
+				Input23 = InstanceInput { SourceOp = "Cintillo", Source = "InkGreen", ControlGroup = 21, Default = 0.9051, },
+				Input24 = InstanceInput { SourceOp = "Cintillo", Source = "InkBlue", ControlGroup = 21, Default = 0.8817, },
+				Input25 = InstanceInput { SourceOp = "Cintillo", Source = "MutedRed", Name = "Cargo", ControlGroup = 22, Default = 0.6072, },
+				Input26 = InstanceInput { SourceOp = "Cintillo", Source = "MutedGreen", ControlGroup = 22, Default = 0.5781, },
+				Input27 = InstanceInput { SourceOp = "Cintillo", Source = "MutedBlue", ControlGroup = 22, Default = 0.5655, },
+			},
+			Outputs = {
+				MainOutput1 = InstanceOutput { SourceOp = "Cintillo", Source = "Output", }
+			},
+			ViewInfo = GroupInfo {
+				Pos = { 0, 0 },
+				Flags = { AllowPan = false, AutoSnap = true, RemoveRouters = true },
+				Size = { 236, 66, 118, 22 },
+				Direction = "Horizontal",
+				PipeStyle = "Direct",
+				Scale = 1,
+				Offset = { 0, 0 }
+			},
+			Tools = ordered() {
+				Lienzo = Background {
+					CtrlWShown = false,
+					Inputs = {
+						Width = Input { Value = 1920, },
+						Height = Input { Value = 1080, },
+						UseFrameFormatSettings = Input { Value = 1, },
+						TopLeftAlpha = Input { Value = 0, },
+					},
+					ViewInfo = OperatorInfo { Pos = { -55, 0 } },
+				},
+				Cintillo = Fuse.datitles_cintillo {
+					CtrlWShown = false,
+					Inputs = {
+						NameFont = Input { Value = "League Gothic", },
+						NameStyle = Input { Value = "Regular", },
+						RoleFont = Input { Value = "IBM Plex Mono", },
+						RoleStyle = Input { Value = "Regular", },
+						FirstFrame = Input { Expression = "comp.RenderStart", },
+						LastFrame = Input { Expression = "comp.RenderEnd", },
+						Input = Input { SourceOp = "Lienzo", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 55, 0 } },
+				},
+			},
+		},
+	},
+	ActiveTool = "datitles"
+}

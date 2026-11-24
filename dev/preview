@@ -9,7 +9,7 @@
 # -v cambia una entrada del Fuse para probar sin tocar la plantilla, por ejemplo -v Rows=1.
 # Un efecto (pelicula, zoom) se prueba encima de los cuadros de otra plantilla sobre negro: BASE, que
 # por omisión es inicio; -t y -v van a esa plantilla y -e cambia una entrada del efecto, por ejemplo
-# -e Ancla=0 o -e Punto=0.2,0.8.
+# -e Punto=0.2,0.8.
 # Cuadros por omisión: unos cuantos a lo largo de un clip de 60 s a 24 fps, en 1920x1080.
 # Deja los PNG en $DATITLES_OUT (por omisión ~/.cache/datitles/preview).
 set -euo pipefail

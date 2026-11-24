@@ -24,7 +24,7 @@ AGPL-3.0-only. `AGENTS.md` es el archivo canónico y `CLAUDE.md` es un hard link
   dev/preview -p inicio -t ejemplos/inicio.txt -s 36
   dev/preview -p cintillo -s 5 -v "Name=Nombre Apellido" -v Role=Dirección 60
   dev/preview -p pelicula -s 10 120
-  dev/preview -p zoom -t ejemplos/inicio.txt -s 36 -e Escala=200 -e Ancla=0
+  dev/preview -p zoom -t ejemplos/inicio.txt -s 36 -e Escala=200 -e Punto=0,1
   ```
 
   Los PNG quedan en `~/.cache/datitles/preview` (no en `/tmp`, que vive en RAM). `-p` elige la

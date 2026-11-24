@@ -19,8 +19,8 @@ Escribes el texto, sueltas el título en la línea de tiempo y la animación dur
 | Effects > Datitles > datitles zoom | zoom in o zoom out con curva y punto ancla |
 
 Los títulos son dos Fuses de Lua (`Fuses/`) envueltos en plantillas de Fusion. La película y el
-zoom usan solo nodos de Fusion. Todo es Lua y nodos nativos (sin DCTL ni OFX), así que corre en Resolve
-gratis y en Studio.
+zoom usan solo nodos de Fusion. Todo es Lua y nodos nativos (sin DCTL ni OFX), así que corre en
+Resolve gratis y en Studio.
 
 ## instalar
 
@@ -170,10 +170,11 @@ que el zoom sea más lento o más rápido, alargas o acortas el clip.
   más marcada. Suavizar dice dónde: al empezar, al terminar o en los dos; con Lineal no hace nada.
   La escala avanza por proporción y no por porcentaje (de 100% a 141% tarda lo mismo que de 141%
   a 200%), por eso un zoom lineal se ve parejo y no parece frenar al final.
-- **Ancla.** El punto que se queda quieto mientras todo crece o se encoge a su alrededor: el
-  centro, una esquina, el centro de un borde o Punto. Con Punto manda el control Punto, que mueves
-  en el visor o escribes en el Inspector (X de 0 a 1 de izquierda a derecha, Y de 0 a 1 de abajo
-  hacia arriba).
+- **Ancla.** El punto que se queda quieto mientras todo crece o se encoge a su alrededor. Lo
+  arrastras en el visor (con Fusion Overlay en el menú de controles de abajo a la izquierda del
+  visor) o escribes X y Y en el Inspector, de 0 a 1: X de izquierda a derecha y Y de abajo hacia
+  arriba, así que 0.5, 0.5 es el centro y 0, 1 la esquina de arriba a la izquierda. Con keyframes
+  el ancla se mueve a lo largo del clip.
 - **Motion blur.** Viene apagado. Prendido, el Transform desenfoca el movimiento del zoom; vale la
   pena en zooms rápidos. Calidad es cuántas muestras toma por cuadro: más se ve mejor y tarda más
   en renderizar.
@@ -190,7 +191,7 @@ dev/preview -t ejemplos/ejemplo.txt -s 45
 dev/preview -p inicio -t ejemplos/inicio.txt -s 36
 dev/preview -p cintillo -s 5 -v "Name=Nombre Apellido" -v Role=Dirección 60
 dev/preview -p pelicula -t ejemplos/inicio.txt -s 36 160
-dev/preview -p zoom -t ejemplos/inicio.txt -s 36 -e Escala=200 -e Ancla=0
+dev/preview -p zoom -t ejemplos/inicio.txt -s 36 -e Escala=200 -e Punto=0,1
 ```
 
 `-p` elige la plantilla (por omisión, creditos) y `-v ID=VALOR` cambia una entrada, por ejemplo

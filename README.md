@@ -1,8 +1,8 @@
 # datitles
 
-Títulos para DaVinci Resolve: créditos que suben, tarjetas de inicio, cintillos y un efecto de
-película con halo, grano, viñeta y gate weave. Escribes el texto, sueltas el título en la línea de
-tiempo y la animación dura lo que dure el clip.
+Títulos para DaVinci Resolve: créditos que suben, tarjetas de inicio, cintillos, un efecto de
+película con halo, grano, viñeta y gate weave, y un zoom in o zoom out con curvas y punto ancla.
+Escribes el texto, sueltas el título en la línea de tiempo y la animación dura lo que dure el clip.
 
 ![Un cuadro de créditos hecho con datitles](docs/preview.png)
 
@@ -16,9 +16,10 @@ tiempo y la animación dura lo que dure el clip.
 | Titles > Datitles > datitles papel | los créditos en tinta sobre papel crema |
 | Titles > Datitles > datitles cintillo | nombre y cargo en el tercio inferior |
 | Effects > Datitles > datitles pelicula | halo por canal, grano, viñeta y gate weave |
+| Effects > Datitles > datitles zoom | zoom in o zoom out con curva y punto ancla |
 
-Los títulos son dos Fuses de Lua (`Fuses/`) envueltos en plantillas de Fusion. La película usa
-solo nodos de Fusion. Todo es Lua y nodos nativos (sin DCTL ni OFX), así que corre en Resolve
+Los títulos son dos Fuses de Lua (`Fuses/`) envueltos en plantillas de Fusion. La película y el
+zoom usan solo nodos de Fusion. Todo es Lua y nodos nativos (sin DCTL ni OFX), así que corre en Resolve
 gratis y en Studio.
 
 ## instalar
@@ -38,8 +39,8 @@ En Windows copia a mano, dentro de
 - la carpeta `Templates\Edit\Titles\Datitles` a `Templates\Edit\Titles\`
 - la carpeta `Templates\Edit\Effects\Datitles` a `Templates\Edit\Effects\`
 
-Reinicia Resolve. Los títulos quedan en Effects > Toolbox > Titles > Datitles y la película en
-Effects > Toolbox > Effects > Datitles. Si tenías la versión 0.1, borra el
+Reinicia Resolve. Los títulos quedan en Effects > Toolbox > Titles > Datitles, y la película y el
+zoom en Effects > Toolbox > Effects > Datitles. Si tenías la versión 0.1, borra el
 `Templates\Edit\Titles\datitles.setting` suelto (`install.sh` lo hace solo).
 
 Las fuentes son todas de Google Fonts, con licencia OFL:
@@ -156,6 +157,30 @@ Fusion:
 Para que todo comparta el mismo grano y el mismo halo, ponlo en un clip de ajuste encima del
 metraje y de los títulos. Sobre un título solo funciona mejor con el fondo sólido prendido.
 
+## zoom
+
+Un zoom in o zoom out sobre el clip. Es un solo nodo Transform de Fusion, así que pesa poco:
+sueltas el efecto en el clip y el zoom dura lo que dure el clip.
+
+- **Sentido.** Zoom in va de 100% a la escala que pidas; zoom out, de esa escala a 100%.
+- **Escala (%).** Qué tanto se acerca. No baja de 100%, así que nunca se ven bordes.
+- **Curva.** Lineal va a la misma velocidad de principio a fin. Seno, cuadrática, cúbica,
+  cuártica, quíntica, exponencial y circular van más despacio en las puntas, de la más suave a la
+  más marcada. Suavizar dice dónde: al empezar, al terminar o en los dos; con Lineal no hace nada.
+  La escala avanza por proporción y no por porcentaje (de 100% a 141% tarda lo mismo que de 141%
+  a 200%), por eso un zoom lineal se ve parejo y no parece frenar al final.
+- **Ancla.** El punto que se queda quieto mientras todo crece o se encoge a su alrededor: el
+  centro, una esquina, el centro de un borde o Punto. Con Punto manda el control Punto, que mueves
+  en el visor o escribes en el Inspector (X de 0 a 1 de izquierda a derecha, Y de 0 a 1 de abajo
+  hacia arriba).
+- **Tiempo.** Con "Todo el clip", el zoom va del primer cuadro al último. Con "Al principio" hace
+  el zoom en los segundos de Duración y se queda ahí; con "Al final" espera y lo hace en los
+  últimos segundos. Con "Manual" manda el slider Progreso (0 a 1), que puedes animar con
+  keyframes; la curva se aplica igual.
+- **Motion blur.** Viene apagado. Prendido, el Transform desenfoca el movimiento del zoom; vale la
+  pena en zooms rápidos. Calidad es cuántas muestras toma por cuadro: más se ve mejor y tarda más
+  en renderizar.
+
 ## probar sin Resolve
 
 `dev/preview` simula la parte de la API de Fusion que usan los Fuses. Revisa que los Fuses estén
@@ -168,11 +193,14 @@ dev/preview -t ejemplos/ejemplo.txt -s 45
 dev/preview -p inicio -t ejemplos/inicio.txt -s 36
 dev/preview -p cintillo -s 5 -v "Name=Nombre Apellido" -v Role=Dirección 60
 dev/preview -p pelicula -t ejemplos/inicio.txt -s 36 160
+dev/preview -p zoom -t ejemplos/inicio.txt -s 36 -e Escala=200 -e Ancla=0
 ```
 
 `-p` elige la plantilla (por omisión, creditos) y `-v ID=VALOR` cambia una entrada, por ejemplo
-`-v Rows=1`. La película se prueba encima de los cuadros de otra plantilla sobre negro (`-b`, por
-omisión inicio), con una aproximación en numpy: sirve para ver la intención, no para calibrarla.
+`-v Rows=1`. Los efectos se prueban encima de los cuadros de otra plantilla sobre negro (`-b`, por
+omisión inicio), con una aproximación en numpy: sirve para ver la intención, no para calibrarla, y
+no hace motion blur. `-e ID=VALOR` cambia una entrada del efecto, por ejemplo `-e Sentido=1` o
+`-e Punto=0.2,0.8`.
 Si cambias el código, edita `src/` y corre `dev/build`, que arma los archivos de `Fuses/`.
 
 El simulador no reemplaza a Resolve: confirma la maqueta y que las llamadas sigan los ejemplos
@@ -186,8 +214,9 @@ abre un issue con tu versión de Resolve y una captura.
 ## in English
 
 datitles is a family of DaVinci Resolve titles: a rolling end-credits crawl, centered opening
-title cards with fades, two alternative credit looks, a lower third and a film-look effect with
-per-channel halation, grain, vignette and gate weave. Credits are written as plain text
+title cards with fades, two alternative credit looks, a lower third, a film-look effect with
+per-channel halation, grain, vignette and gate weave, and a lightweight zoom in/zoom out effect
+(a single Transform node) with easing curves and an anchor point. Credits are written as plain text
 (`Role | Name`, `# Title`, `## Closing`, plain lines for departments). It ships as two Lua Fuses
 plus Edit page templates in a `Datitles` folder; run `./install.sh` on macOS or Linux, or copy
 the files into your Fusion folder on Windows. Works on the free version.

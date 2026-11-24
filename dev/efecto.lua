@@ -16,7 +16,8 @@ local KNOWN = {
 	FilmGrain = { "Input", "EffectMask", "Blend", "Complexity", "AlphaMultiply", "LogProcessing", "TimeLockSeed",
 		"Seed", "Monochrome", "LockSizeXY", "MasterXSize", "MasterYSize", "MasterStrength", "MasterRoughness",
 		"MasterOffset" },
-	Transform = { "Input", "EffectMask", "Blend", "Center", "Pivot", "Size", "Angle", "Edges", "FilterMethod" },
+	Transform = { "Input", "EffectMask", "Blend", "Center", "Pivot", "Size", "Angle", "Edges", "FilterMethod",
+		"MotionBlur", "Quality", "ShutterAngle" },
 	Shake = { "LockXY", "XMinimum", "XMaximum", "YMinimum", "YMaximum", "Smoothness", "RandomSeed" },
 	EllipseMask = { "Filter", "SoftEdge", "Invert", "Width", "Height", "Center", "BorderWidth" },
 }
@@ -50,7 +51,13 @@ local function json(v)
 	return "null"
 end
 
-return function(group, check, render)
+return function(group, report, render)
+	-- Con un problema no se simula: preview.lua lo cuenta al volver.
+	local failed = false
+	local function check(ok, msg)
+		failed = failed or not ok
+		report(ok, msg)
+	end
 	local tools = group.Tools
 	local inputsOf = {}
 	for name, t in pairs(tools) do
@@ -111,55 +118,126 @@ return function(group, check, render)
 		end
 	end
 
-	-- Expresiones: Lua con time, Point y los valores de los demás nodos (Nodo.Entrada).
-	local function value(t, id)
-		local input = (t.Inputs or {})[id]
-		if input and input.Value ~= nil then
-			return input.Value
-		end
-		local uc = (t.UserControls or {})[id]
-		return uc and uc.INP_Default
-	end
-	local function env(time)
-		local e = setmetatable({ time = time, math = math }, {
-			__index = function(_, name)
-				local t = tools[name]
-				if t then
-					return setmetatable({}, { __index = function(_, id) return value(t, id) end })
+	-- Valores cambiados con --valor ID=VALOR: ID es una entrada que solo un nodo tiene en
+	-- UserControls o con valor en la plantilla, o Nodo.Entrada. Un punto se escribe X,Y.
+	for _, o in ipairs(render and render.overrides or {}) do
+		local name, id = o.id:match("^([^.]+)%.(.+)$")
+		if not name then
+			id = o.id
+			for n, t in pairs(tools) do
+				if (t.UserControls or {})[id] or (t.Inputs or {})[id] then
+					check(not name, id .. ": la tienen varios nodos, usa Nodo." .. id)
+					name = n
 				end
-				return math[name]
+			end
+		end
+		check(name and inputsOf[name] and inputsOf[name][id], "el efecto no tiene la entrada " .. o.id)
+		if name and inputsOf[name] and inputsOf[name][id] then
+			local v = o.value
+			if type(v) == "string" then
+				local x, y = v:match("^([^,]+),([^,]+)$")
+				if tonumber(x) and tonumber(y) then
+					v = { tonumber(x), tonumber(y) }
+				end
+			end
+			tools[name].Inputs = tools[name].Inputs or {}
+			tools[name].Inputs[id] = { Value = v }
+		end
+	end
+
+	-- Expresiones: Lua con time, comp, Point, las entradas del mismo nodo por su id y las de los
+	-- demás como Nodo.Entrada. Si empiezan con ":" son varias líneas que terminan en return.
+	local duration = render and render.duration or 24 * 60
+	local comp = {
+		RenderStart = 0,
+		RenderEnd = duration - 1,
+		GetPrefs = function(_, name)
+			local prefs = { Comp = { FrameFormat = { Rate = 24 } } }
+			if name == nil then
+				return prefs
+			end
+			return name == "Comp.FrameFormat.Rate" and 24 or nil
+		end,
+	}
+	local function Point(x, y)
+		return { x, y, X = x, Y = y }
+	end
+	local compiled = {}
+	local value
+	local function env(name, time, memo)
+		local own = inputsOf[name]
+		return setmetatable({ time = time, comp = comp, math = math, Point = Point }, {
+			__index = function(_, key)
+				if own[key] then
+					return value(name, key, time, memo)
+				end
+				if tools[key] then
+					return setmetatable({}, { __index = function(_, id) return value(key, id, time, memo) end })
+				end
+				return math[key]
 			end,
 		})
-		e.Point = function(x, y)
-			return { x, y }
+	end
+	-- El valor de una entrada en un cuadro, con las expresiones resueltas y guardadas en memo.
+	function value(name, id, time, memo)
+		local key = name .. "." .. id
+		if memo[key] == false then
+			error("las expresiones se llaman en círculo en " .. key)
 		end
-		return e
+		if memo[key] == nil then
+			local t = tools[name]
+			local input = (t.Inputs or {})[id] or {}
+			local uc = (t.UserControls or {})[id]
+			local v
+			if input.Expression then
+				memo[key] = false
+				v = setfenv(compiled[key], env(name, time, memo))()
+			elseif input.Value ~= nil then
+				v = input.Value
+			elseif type(uc) == "table" then
+				if uc.LINKID_DataType == "Point" then
+					v = { uc.INP_DefaultX or 0.5, uc.INP_DefaultY or 0.5 }
+				else
+					v = uc.INP_Default
+				end
+			end
+			if type(v) == "table" and v.__type == nil and #v == 2 then
+				v = Point(v[1], v[2])
+			end
+			memo[key] = v
+		end
+		return memo[key]
 	end
 	local exprs = {}
 	for name, t in pairs(tools) do
 		for id, input in pairs(t.Inputs or {}) do
 			if input.Expression then
-				local fn, err = loadstring("return " .. input.Expression)
+				local src = input.Expression
+				src = src:sub(1, 1) == ":" and src:sub(2) or "return " .. src
+				local fn, err = loadstring(src, "=" .. name .. "." .. id)
 				check(fn, name .. "." .. id .. ": la expresión no se entiende: " .. tostring(err))
 				if fn then
-					local ok, v = pcall(setfenv(fn, env(0)))
-					check(ok and v ~= nil, name .. "." .. id .. ": la expresión falla: " .. tostring(v))
-					exprs[#exprs + 1] = { tool = name, id = id, fn = fn }
+					compiled[name .. "." .. id] = fn
+					exprs[#exprs + 1] = { tool = name, id = id }
 				end
 			end
 		end
 	end
+	for _, e in ipairs(exprs) do
+		local ok, v = pcall(value, e.tool, e.id, 0, {})
+		check(ok and v ~= nil, e.tool .. "." .. e.id .. ": la expresión falla: " .. tostring(v))
+	end
 
-	if not render then
+	if not render or failed then
 		return
 	end
 
 	-- Nodos con sus valores en cada cuadro.
 	local out = { '{"output":"' .. mainOut.SourceOp .. '","input":"' .. main.SourceOp .. '","duration":' .. render.duration .. ',"frames":[' }
 	for f, time in ipairs(render.frames) do
-		local resolved = {}
+		local resolved, memo = {}, {}
 		for _, e in ipairs(exprs) do
-			resolved[e.tool .. "." .. e.id] = setfenv(e.fn, env(time))()
+			resolved[e.tool .. "." .. e.id] = value(e.tool, e.id, time, memo)
 		end
 		local parts = {}
 		for name, t in pairs(tools) do

@@ -1,9 +1,9 @@
 # datitles: guía para agentes
 
-Títulos para DaVinci Resolve: créditos que suben, tarjetas de inicio, cintillos y un efecto de
-película. Los títulos son Fuses de Lua envueltos en plantillas de Fusion para el Edit page; la
-película es una plantilla hecha solo con nodos de Fusion. Repo público, AGPL-3.0-only. `AGENTS.md`
-es el archivo canónico y `CLAUDE.md` es un hard link.
+Títulos para DaVinci Resolve: créditos que suben, tarjetas de inicio, cintillos, un efecto de
+película y un zoom. Los títulos son Fuses de Lua envueltos en plantillas de Fusion para el Edit
+page; la película y el zoom son plantillas hechas solo con nodos de Fusion. Repo público,
+AGPL-3.0-only. `AGENTS.md` es el archivo canónico y `CLAUDE.md` es un hard link.
 
 ## dónde está cada cosa
 
@@ -11,7 +11,7 @@ es el archivo canónico y `CLAUDE.md` es un hard link.
   `src/cintillo.lua` son cada Fuse, con una línea `-- @comun` donde va lo compartido.
 - `Fuses/`: los Fuses que arma `dev/build` desde `src/`. No se editan a mano.
 - `Templates/Edit/Titles/Datitles/`: los títulos (créditos, inicio, clásico, papel y cintillo).
-- `Templates/Edit/Effects/Datitles/`: la película.
+- `Templates/Edit/Effects/Datitles/`: la película y el zoom.
 
 ## reglas
 
@@ -24,13 +24,15 @@ es el archivo canónico y `CLAUDE.md` es un hard link.
   dev/preview -p inicio -t ejemplos/inicio.txt -s 36
   dev/preview -p cintillo -s 5 -v "Name=Nombre Apellido" -v Role=Dirección 60
   dev/preview -p pelicula -s 10 120
+  dev/preview -p zoom -t ejemplos/inicio.txt -s 36 -e Escala=200 -e Ancla=0
   ```
 
   Los PNG quedan en `~/.cache/datitles/preview` (no en `/tmp`, que vive en RAM). `-p` elige la
-  plantilla y `-v ID=VALOR` cambia una entrada sin tocarla. Usa el `python3` del sistema, con
-  Pillow y numpy; otro con `DATITLES_PYTHON`. El simulador prueba la maqueta y las plantillas, no
-  la API real: las llamadas de dibujo siguen `drawstring` del Example 6 del Fuse SDK y la película
-  se aproxima con numpy. Lo que dependa de Fusion de verdad se lo pides a Diego en Resolve.
+  plantilla y `-v ID=VALOR` cambia una entrada sin tocarla; en un efecto, `-e ID=VALOR` cambia una
+  del efecto (un punto va como `X,Y`). Usa el `python3` del sistema, con Pillow y numpy; otro con
+  `DATITLES_PYTHON`. El simulador prueba la maqueta y las plantillas, no la API real: las llamadas
+  de dibujo siguen `drawstring` del Example 6 del Fuse SDK, y los efectos se aproximan con numpy y
+  sin motion blur. Lo que dependa de Fusion de verdad se lo pides a Diego en Resolve.
 - `dev/preview` revisa todas las plantillas cada vez. Una plantilla publica entradas que existen,
   en el orden del Fuse, con su `Default` igual al valor que la plantilla le pone o, si no le pone
   ninguno, al del Fuse. Lo que no publica necesita valor en la plantilla o ir dentro de un grupo

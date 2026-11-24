@@ -21,4 +21,4 @@ done
 # La 0.1 dejaba la plantilla suelta, junto a las de Resolve.
 rm -f "$fusion/Templates/Edit/Titles/datitles.setting"
 echo "Instalado en $fusion"
-echo "Reinicia Resolve: los títulos quedan en Effects > Toolbox > Titles > Datitles y la película en Effects > Toolbox > Effects > Datitles."
+echo "Reinicia Resolve: los títulos quedan en Effects > Toolbox > Titles > Datitles, y la película y el zoom en Effects > Toolbox > Effects > Datitles."

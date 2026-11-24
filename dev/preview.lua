@@ -94,7 +94,7 @@ end
 -- Sin Fuse es un efecto hecho con nodos de Fusion: lo revisa efecto.lua.
 if not tool then
 	local efecto = dofile(root .. "/dev/efecto.lua")
-	efecto(group, check, metricsPath and { out = outPath, frames = frames, duration = duration } or nil)
+	efecto(group, check, metricsPath and { out = outPath, frames = frames, duration = duration, overrides = overrides } or nil)
 	finish()
 	os.exit(0)
 end

@@ -4,7 +4,7 @@ Uso: python pelicula.py EFECTO.json CARPETA
 
 Lee los nodos con sus valores en cada cuadro (los deja efecto.lua) y los aplica a
 CARPETA/cuadro-NNNNN.png. Es para ver la intención, no lo que dará Fusion: el tamaño de los blur,
-el grano y el Shake se calculan a ojo. Necesita Pillow y numpy.
+el grano y el Shake se calculan a ojo, y no hay motion blur. Necesita Pillow y numpy.
 """
 
 import json
@@ -47,17 +47,24 @@ def smooth_random(seed, t, period):
     return a + (b - a) * w
 
 
+CLIP = "__clip__"  # el cuadro que llega al efecto, entre los resultados de los nodos
+
+
 class Graph:
-    def __init__(self, tools, clip, time, width):
-        self.tools, self.clip, self.time = tools, clip, time
+    def __init__(self, tools, clip, time, width, entry):
+        self.tools, self.time, self.entry = tools, time, entry
         self.h, self.w = clip.shape[:2]
         self.px = width / 1920  # los tamaños de Fusion se toman en píxeles de un cuadro de 1920
-        self.memo = {}
+        self.memo = {CLIP: clip}
 
     def get(self, name):
         if name not in self.memo:
             t = self.tools[name]
-            self.memo[name] = getattr(self, t["type"])(t["inputs"], name)
+            inputs = t["inputs"]
+            if name == self.entry:
+                # El clip entra al Input de este nodo.
+                inputs = {**inputs, "Input": {"from": CLIP}}
+            self.memo[name] = getattr(self, t["type"])(inputs, name)
         return self.memo[name]
 
     def src(self, inputs, key):
@@ -73,7 +80,7 @@ class Graph:
         return img + (out - img) * k
 
     def PipeRouter(self, inputs, name):
-        return self.clip if name == self.entry else self.src(inputs, "Input")
+        return self.src(inputs, "Input")
 
     def BrightnessContrast(self, inputs, name):
         img = self.src(inputs, "Input")
@@ -165,8 +172,7 @@ def main():
         path = Path(folder) / f"cuadro-{frame['time']:05d}.png"
         rgba = np.asarray(Image.open(path).convert("RGBA"), dtype=np.float32) / 255
         rgba[..., :3] *= rgba[..., 3:4]
-        g = Graph(frame["tools"], rgba, frame["time"], rgba.shape[1])
-        g.entry = data["input"]
+        g = Graph(frame["tools"], rgba, frame["time"], rgba.shape[1], data["input"])
         out = np.clip(g.get(data["output"]), 0, 1)
         alpha = np.maximum(out[..., 3:4], 1e-6)
         rgb = np.where(out[..., 3:4] > 0, out[..., :3] / alpha, 0)

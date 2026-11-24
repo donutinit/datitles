@@ -2,12 +2,14 @@
 # Simula datitles en lizeth (sin Resolve): revisa que los Fuses estén armados desde src/ y todas
 # las plantillas, corre una y dibuja cuadros.
 #
-#   dev/preview [-p PLANTILLA] [-b BASE] [-t TEXTO] [-s SEGUNDOS] [-v ID=VALOR]... [CUADRO...]
+#   dev/preview [-p PLANTILLA] [-b BASE] [-t TEXTO] [-s SEGUNDOS] [-v ID=VALOR]... [-e ID=VALOR]...
+#               [CUADRO...]
 #
 # PLANTILLA es el nombre sin "datitles " ni ".setting" (creditos, inicio...); por omisión, creditos.
 # -v cambia una entrada del Fuse para probar sin tocar la plantilla, por ejemplo -v Rows=1.
-# Un efecto (pelicula) se prueba encima de los cuadros de otra plantilla sobre negro: BASE, que por
-# omisión es inicio; -t y -v van a esa plantilla.
+# Un efecto (pelicula, zoom) se prueba encima de los cuadros de otra plantilla sobre negro: BASE, que
+# por omisión es inicio; -t y -v van a esa plantilla y -e cambia una entrada del efecto, por ejemplo
+# -e Ancla=0 o -e Punto=0.2,0.8.
 # Cuadros por omisión: unos cuantos a lo largo de un clip de 60 s a 24 fps, en 1920x1080.
 # Deja los PNG en $DATITLES_OUT (por omisión ~/.cache/datitles/preview).
 set -euo pipefail
@@ -20,13 +22,15 @@ base=inicio
 text=""
 seconds=60
 values=()
-while getopts "p:b:t:s:v:" opt; do
+effect_values=()
+while getopts "p:b:t:s:v:e:" opt; do
   case $opt in
     p) template=$OPTARG ;;
     b) base=$OPTARG ;;
     t) text=$OPTARG ;;
     s) seconds=$OPTARG ;;
     v) values+=(--valor "$OPTARG") ;;
+    e) effect_values+=(--valor "$OPTARG") ;;
     *) exit 2 ;;
   esac
 done
@@ -49,6 +53,10 @@ case $selected in
     done
     ;;
 esac
+if [ -z "$effect" ] && [ ${#effect_values[@]} -gt 0 ]; then
+  echo "-e es para los efectos; en una plantilla de título usa -v" >&2
+  exit 2
+fi
 if [ -z "$selected" ]; then
   echo "no hay plantilla datitles $template.setting (o su base, datitles $base.setting)" >&2
   exit 2
@@ -71,7 +79,7 @@ args+=("${values[@]}")
 luajit "$root/dev/preview.lua" "${args[@]}"
 if [ -n "$effect" ]; then
   "$python" -I "$root/dev/render.py" "$out/metrics.lua" "$out/cuadros.json" "$out" --negro
-  luajit "$root/dev/preview.lua" "$effect" "$out/metrics.lua" "$out/efecto.json" 1920 1080 "$duration" "${frames[@]}"
+  luajit "$root/dev/preview.lua" "$effect" "$out/metrics.lua" "$out/efecto.json" 1920 1080 "$duration" "${frames[@]}" "${effect_values[@]}"
   "$python" -I "$root/dev/pelicula.py" "$out/efecto.json" "$out"
 else
   "$python" -I "$root/dev/render.py" "$out/metrics.lua" "$out/cuadros.json" "$out"

@@ -159,8 +159,9 @@ metraje y de los títulos. Sobre un título solo funciona mejor con el fondo só
 
 ## zoom
 
-Un zoom in o zoom out sobre el clip. Es un solo nodo Transform de Fusion, así que pesa poco:
-sueltas el efecto en el clip y el zoom dura lo que dure el clip.
+Un zoom in o zoom out sobre el clip. Es un solo nodo Transform de Fusion, así que pesa poco. El
+zoom va del primer cuadro al último: sueltas el efecto en un clip o en un clip de ajuste y, para
+que el zoom sea más lento o más rápido, alargas o acortas el clip.
 
 - **Sentido.** Zoom in va de 100% a la escala que pidas; zoom out, de esa escala a 100%.
 - **Escala (%).** Qué tanto se acerca. No baja de 100%, así que nunca se ven bordes.
@@ -173,10 +174,6 @@ sueltas el efecto en el clip y el zoom dura lo que dure el clip.
   centro, una esquina, el centro de un borde o Punto. Con Punto manda el control Punto, que mueves
   en el visor o escribes en el Inspector (X de 0 a 1 de izquierda a derecha, Y de 0 a 1 de abajo
   hacia arriba).
-- **Tiempo.** Con "Todo el clip", el zoom va del primer cuadro al último. Con "Al principio" hace
-  el zoom en los segundos de Duración y se queda ahí; con "Al final" espera y lo hace en los
-  últimos segundos. Con "Manual" manda el slider Progreso (0 a 1), que puedes animar con
-  keyframes; la curva se aplica igual.
 - **Motion blur.** Viene apagado. Prendido, el Transform desenfoca el movimiento del zoom; vale la
   pena en zooms rápidos. Calidad es cuántas muestras toma por cuadro: más se ve mejor y tarda más
   en renderizar.
